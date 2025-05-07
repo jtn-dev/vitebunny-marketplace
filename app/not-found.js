@@ -8,7 +8,7 @@ export default function NotFound() {
       <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-primary to-secondary text-transparent bg-clip-text mb-6">404</h1>
       <h2 className="text-2xl md:text-3xl font-bold mb-4">Page Not Found</h2>
       <p className="text-foreground/70 text-lg max-w-lg mb-8">
-        The NFT you're looking for may have been moved to another marketplace or doesn't exist.
+        The NFT you&apos;re looking for may have been moved to another marketplace or doesn&apos;t exist.
       </p>
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <Button leftIcon={<FaHome />}>

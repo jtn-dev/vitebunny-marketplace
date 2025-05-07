@@ -236,7 +236,7 @@ export default function CollectionDetail() {
                 <FaWallet className="h-8 w-8 text-primary/40" />
               </div>
               <p className="text-xl font-light text-text-muted">Owners information coming soon</p>
-              <p className="text-text-light mt-2 text-sm">We're working on this feature</p>
+              <p className="text-text-light mt-2 text-sm">We&apos;re working on this feature</p>
             </div>
           )}
         </div>

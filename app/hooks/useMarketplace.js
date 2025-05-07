@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   useAccount, 
   useReadContract, 
-  useContractEvent
+  useContractEvent,
+  readContract
 } from 'wagmi';
 import { 
   MARKETPLACE_ABI, 
@@ -74,15 +75,38 @@ export const useMarketplace = () => {
     },
   });
 
+  // Helper functions that don't use hooks directly
+  const getTokenURI = async (tokenId) => {
+    return await readContract({
+      address: NFT_CONTRACT_ADDRESS,
+      abi: NFT_ABI,
+      functionName: 'tokenURI',
+      args: [tokenId],
+    });
+  };
+
+  const getTokenCollection = async (tokenId) => {
+    return await readContract({
+      address: NFT_CONTRACT_ADDRESS,
+      abi: NFT_ABI,
+      functionName: 'getTokenCollection',
+      args: [tokenId],
+    });
+  };
+
+  const getTokenCreator = async (tokenId) => {
+    return await readContract({
+      address: NFT_CONTRACT_ADDRESS,
+      abi: NFT_ABI,
+      functionName: 'getTokenCreator',
+      args: [tokenId],
+    });
+  };
+
   // Fetch NFT metadata for a specific token
   const fetchNFTMetadata = useCallback(async (tokenId) => {
     try {
-      const { data: tokenURI } = await useReadContract({
-        address: NFT_CONTRACT_ADDRESS,
-        abi: NFT_ABI,
-        functionName: 'tokenURI',
-        args: [tokenId],
-      });
+      const tokenURI = await getTokenURI(tokenId);
 
       if (!tokenURI) return null;
 
@@ -120,20 +144,10 @@ export const useMarketplace = () => {
 
         try {
           // Get token collection
-          const { data: collection } = await useReadContract({
-            address: NFT_CONTRACT_ADDRESS,
-            abi: NFT_ABI,
-            functionName: 'getTokenCollection',
-            args: [formattedItem.tokenId],
-          });
-
+          const collection = await getTokenCollection(formattedItem.tokenId);
+          
           // Get token creator
-          const { data: creator } = await useReadContract({
-            address: NFT_CONTRACT_ADDRESS,
-            abi: NFT_ABI,
-            functionName: 'getTokenCreator',
-            args: [formattedItem.tokenId],
-          });
+          const creator = await getTokenCreator(formattedItem.tokenId);
 
           // Get token metadata
           const metadata = await fetchNFTMetadata(formattedItem.tokenId);

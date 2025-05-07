@@ -124,7 +124,7 @@ export default function MyNFTs() {
       ) : (
         <div className="text-center py-12 bg-card-bg rounded-xl border border-border">
           <h2 className="text-xl font-medium mb-2">No NFTs Found</h2>
-          <p className="text-foreground/60 mb-6">You don't have any NFTs in your wallet yet</p>
+          <p className="text-foreground/60 mb-6">You don&apos;t have any NFTs in your wallet yet</p>
           <Link href="/explore" className="text-primary inline-flex items-center hover:underline">
             Explore NFTs to buy
           </Link>

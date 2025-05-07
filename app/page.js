@@ -55,7 +55,7 @@ export default function Home() {
             NFTs
           </h1>
           <p className="text-text-muted text-lg mb-8 max-w-2xl mx-auto">
-            Vite Bunny is the world's first and largest NFT marketplace for crypto collectibles and non-fungible tokens.
+            Vite Bunny is the world&apos;s first and largest NFT marketplace for crypto collectibles and non-fungible tokens.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
             <Button size="lg" variant="primary" className="px-8">
@@ -107,7 +107,7 @@ export default function Home() {
       <section className="section">
         <div className="container mx-auto">
           <h2 className="section-title text-3xl font-light">Featured Collections</h2>
-          <p className="text-text-muted mb-12 text-center">The NFTs everyone's talking about</p>
+          <p className="text-text-muted mb-12 text-center">The NFTs everyone&apos;s talking about</p>
           {!isLoaded ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
