@@ -8,7 +8,7 @@ import Collection from '../../models/Collection';
 const getProvider = () => {
   // Use environment variables to determine RPC URL
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
-  return new ethers.providers.JsonRpcProvider(rpcUrl);
+  return new ethers.JsonRpcProvider(rpcUrl);
 };
 
 // Function to fetch NFT metadata from URI
@@ -69,7 +69,7 @@ async function syncNFTToDatabase(tokenId, provider) {
       tokenURI,
       metadata,
       isListed: !!marketItem,
-      price: marketItem ? ethers.utils.formatEther(marketItem.price) : '0',
+      price: marketItem ? ethers.formatEther(marketItem.price) : '0',
       marketItemId: marketItem ? marketItem.itemId.toString() : null,
       seller: marketItem ? marketItem.seller : null
     };

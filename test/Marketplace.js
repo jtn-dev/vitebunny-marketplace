@@ -16,12 +16,12 @@ describe("ViteBunny NFT Marketplace", function () {
 
     // Deploy NFT contract
     ViteBunnyNFT = await ethers.getContractFactory("ViteBunnyNFT");
-    viteBunnyNFT = await ViteBunnyNFT.deploy(owner.address);
+    viteBunnyNFT = await ViteBunnyNFT.deploy();
     await viteBunnyNFT.waitForDeployment();
 
     // Deploy Marketplace contract
     ViteBunnyMarketplace = await ethers.getContractFactory("ViteBunnyMarketplace");
-    viteBunnyMarketplace = await ViteBunnyMarketplace.deploy(owner.address);
+    viteBunnyMarketplace = await ViteBunnyMarketplace.deploy();
     await viteBunnyMarketplace.waitForDeployment();
   });
 

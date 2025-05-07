@@ -15,7 +15,7 @@ let listenersActive = false;
 // Function to sync all existing NFTs
 async function syncAllNFTs() {
   try {
-    const provider = new ethers.providers.JsonRpcProvider(
+    const provider = new ethers.JsonRpcProvider(
       process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545'
     );
     

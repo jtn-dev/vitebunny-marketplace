@@ -8,7 +8,7 @@ import NFT from '../../models/NFT';
 const getProvider = () => {
   // Use environment variables to determine RPC URL
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
-  return new ethers.providers.JsonRpcProvider(rpcUrl);
+  return new ethers.JsonRpcProvider(rpcUrl);
 };
 
 export async function GET(request) {

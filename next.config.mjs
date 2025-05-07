@@ -2,11 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: [
-      'images.unsplash.com',
-      'localhost',
-      'source.unsplash.com',
-    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -15,8 +10,12 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-      }
-    ]
+      },
+      {
+        protocol: 'https', // Assuming source.unsplash.com uses https
+        hostname: 'source.unsplash.com',
+      },
+    ],
   },
   experimental: {
     typedRoutes: true

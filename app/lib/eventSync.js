@@ -12,7 +12,7 @@ import Collection from '../models/Collection';
 // Create a provider based on environment
 const getProvider = () => {
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
-  return new ethers.providers.JsonRpcProvider(rpcUrl);
+  return new ethers.JsonRpcProvider(rpcUrl);
 };
 
 // Function to fetch NFT metadata from URI
@@ -93,7 +93,7 @@ export async function handleMarketItemCreated(itemId, nftContract, tokenId, sell
       { tokenId: tokenId.toString() },
       { 
         isListed: true,
-        price: ethers.utils.formatEther(price),
+        price: ethers.formatEther(price),
         marketItemId: itemId.toString(),
         seller,
         owner: MARKETPLACE_ADDRESS,
@@ -104,7 +104,7 @@ export async function handleMarketItemCreated(itemId, nftContract, tokenId, sell
     
     // Update collection floor price if needed
     if (nft) {
-      const priceEth = ethers.utils.formatEther(price);
+      const priceEth = ethers.formatEther(price);
       await Collection.findOneAndUpdate(
         { name: nft.collection, floorPrice: { $gt: priceEth } },
         { floorPrice: priceEth, updatedAt: new Date() }
@@ -139,7 +139,7 @@ export async function handleMarketItemSold(itemId, nftContract, tokenId, seller,
     
     // Update collection volume
     if (nft) {
-      const priceEth = ethers.utils.formatEther(price);
+      const priceEth = ethers.formatEther(price);
       await Collection.findOneAndUpdate(
         { name: nft.collection },
         { 
