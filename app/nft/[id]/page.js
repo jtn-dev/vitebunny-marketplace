@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { FaEthereum, FaHeart, FaShare, FaRegHeart, FaEye, FaHistory, FaTags, FaChevronDown, FaChevronUp, FaWallet } from 'react-icons/fa';
 import Button from '../../components/Button';
@@ -119,10 +120,13 @@ export default function NFTDetail({ params }) {
         <div>
           <div className="rounded-xl overflow-hidden border border-border bg-card-bg shadow-lg">
             <div className="aspect-square relative overflow-hidden">
-              <img 
+              <Image 
                 src={nft.image} 
                 alt={nft.name} 
-                className="w-full h-full object-cover" 
+                width={800}
+                height={800}
+                className="w-full h-full object-cover"
+                priority
               />
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { FaArrowLeft, FaEthereum } from 'react-icons/fa';
 import Button from '../components/Button';
 import { nfts } from '../utils/dummyData';
@@ -93,10 +94,13 @@ export default function MyNFTs() {
             <div key={nft.id} className="bg-card-bg rounded-xl overflow-hidden border border-border hover:border-primary transition-colors">
               <Link href={`/nft/${nft.id}`} className="block">
                 <div className="aspect-square relative overflow-hidden">
-                  <img 
+                  <Image 
                     src={nft.image} 
                     alt={nft.name} 
-                    className="w-full h-full object-cover transition-transform hover:scale-105" 
+                    width={400}
+                    height={400}
+                    className="w-full h-full object-cover transition-transform hover:scale-105"
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
                 <div className="p-4">
@@ -138,11 +142,12 @@ export default function MyNFTs() {
             <h2 className="text-xl font-bold mb-4">List {selectedNFT.name} for Sale</h2>
             
             <div className="flex items-center mb-6">
-              <div className="w-24 h-24 rounded-lg overflow-hidden mr-4">
-                <img 
+              <div className="w-24 h-24 rounded-lg overflow-hidden mr-4 relative">
+                <Image 
                   src={selectedNFT.image} 
                   alt={selectedNFT.name} 
-                  className="w-full h-full object-cover" 
+                  fill
+                  className="object-cover"
                 />
               </div>
               <div>
