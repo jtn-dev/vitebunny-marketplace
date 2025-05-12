@@ -20,7 +20,7 @@ const NFTSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    collection: {
+    collectionName: {
       type: String,
       required: true,
       index: true,
@@ -82,7 +82,7 @@ const NFTSchema = new mongoose.Schema(
 
 // Create indexes for common queries
 NFTSchema.index({ tokenId: 1 });
-NFTSchema.index({ collection: 1 });
+NFTSchema.index({ collectionName: 1 });
 NFTSchema.index({ creator: 1 });
 NFTSchema.index({ owner: 1 });
 NFTSchema.index({ isListed: 1 });

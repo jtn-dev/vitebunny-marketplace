@@ -9,6 +9,7 @@ import { useAccount } from 'wagmi';
 import NFTCard from '../../components/NFTCard';
 import { collections, nfts } from '../../utils/dummyData';
 import { truncateAddress } from '../../utils/walletUtils';
+import { getCollectionImagePath } from '../../utils/imageUtils';
 
 export default function CollectionDetail() {
   const params = useParams();
@@ -18,19 +19,64 @@ export default function CollectionDetail() {
   const [collectionNFTs, setCollectionNFTs] = useState([]);
   const [activeTab, setActiveTab] = useState('items');
   const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState(null);
   
+  // Fetch collection data and NFTs
   useEffect(() => {
     setMounted(true);
     
-    // Find the collection by slug
-    const foundCollection = collections.find(c => c.slug === slug);
-    setCollection(foundCollection);
+    const fetchCollection = async () => {
+      try {
+        // First try to get from API
+        const response = await fetch(`/api/collections/${slug}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setCollection(data);
+          
+          // Fetch NFTs in this collection from API
+          const nftsResponse = await fetch(`/api/nfts?collection=${encodeURIComponent(data.name)}`);
+          if (nftsResponse.ok) {
+            const nftsData = await nftsResponse.json();
+            // Extract NFTs array depending on the response format
+            const nftArray = nftsData.nfts || nftsData;
+            setCollectionNFTs(Array.isArray(nftArray) ? nftArray : []);
+            return;
+          }
+        }
+        
+        // Fallback to dummy data if API fails
+        const foundCollection = collections.find(col => col.slug === slug);
+        
+        if (!foundCollection) {
+          setError('Collection not found');
+          return;
+        }
+        
+        setCollection(foundCollection);
+        
+        // Filter NFTs that belong to this collection
+        const filteredNFTs = nfts.filter(nft => 
+          (nft.collectionName || nft.collection) === foundCollection.name
+        );
+        
+        setCollectionNFTs(filteredNFTs);
+      } catch (error) {
+        console.error('Error fetching collection data:', error);
+        
+        // Fallback to dummy data
+        const foundCollection = collections.find(c => c.slug === slug);
+        setCollection(foundCollection);
+        
+        // Find NFTs in this collection
+        if (foundCollection) {
+          const filteredNFTs = nfts.filter(nft => nft.collection === foundCollection.name);
+          setCollectionNFTs(filteredNFTs);
+        }
+      }
+    };
     
-    // Find NFTs in this collection
-    if (foundCollection) {
-      const filteredNFTs = nfts.filter(nft => nft.collection === foundCollection.name);
-      setCollectionNFTs(filteredNFTs);
-    }
+    fetchCollection();
   }, [slug]);
   
   if (!mounted || !collection) {
@@ -58,7 +104,7 @@ export default function CollectionDetail() {
       {/* Banner Image */}
       <div className="w-full h-48 md:h-64 relative">
         <Image 
-          src={collection.bannerImage}
+          src={getCollectionImagePath(collection.bannerImage, 'banner')}
           alt={`${collection.name} banner`}
           fill
           style={{ objectFit: 'cover' }}
@@ -71,7 +117,7 @@ export default function CollectionDetail() {
           {/* Collection Avatar */}
           <div className="relative -mt-20 h-32 w-32 md:h-40 md:w-40 rounded-xl overflow-hidden border-4 border-background shadow-lg">
             <Image 
-              src={collection.avatarImage}
+              src={getCollectionImagePath(collection.avatarImage, 'avatar')}
               alt={`${collection.name} avatar`}
               fill
               style={{ objectFit: 'cover' }}
@@ -209,7 +255,7 @@ export default function CollectionDetail() {
               {collectionNFTs.length > 0 ? (
                 <div className="nft-grid">
                   {collectionNFTs.map(nft => (
-                    <NFTCard key={nft.id} nft={nft} />
+                    <NFTCard key={nft.tokenId || nft.id} nft={nft} />
                   ))}
                 </div>
               ) : (

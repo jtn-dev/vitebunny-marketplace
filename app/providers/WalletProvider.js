@@ -9,7 +9,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 // Configure chains & providers
 const config = getDefaultConfig({
   appName: 'Vite Bunny NFT Marketplace',
-  projectId: 'YOUR_WALLETCONNECT_PROJECT_ID', // Get one at https://cloud.walletconnect.com
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_WALLETCONNECT_PROJECT_ID', // Get one at https://cloud.walletconnect.com
   chains: [mainnet, sepolia],
   ssr: true, // Enable server-side rendering
 });

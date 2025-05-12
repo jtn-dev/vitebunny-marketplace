@@ -9,6 +9,7 @@ export const nfts = [
     likes: 42,
     owner: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
     creator: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
+    isListed: true,
     attributes: [
       { trait_type: 'Background', value: 'Cosmic Void' },
       { trait_type: 'Fur', value: 'Nebula Pink' },
@@ -27,6 +28,7 @@ export const nfts = [
     likes: 38,
     owner: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
     creator: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
+    isListed: true,
     attributes: [
       { trait_type: 'Style', value: 'Abstract' },
       { trait_type: 'Color Palette', value: 'Neon' },
@@ -44,29 +46,12 @@ export const nfts = [
     likes: 24,
     owner: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
     creator: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
+    isListed: true,
     attributes: [
       { trait_type: 'Size', value: '32x32' },
       { trait_type: 'Color', value: 'Sepia' },
       { trait_type: 'Rarity', value: 'Uncommon' },
       { trait_type: 'Generation', value: 'First' },
-    ]
-  },
-  {
-    id: '4',
-    name: 'BadB#4',
-    collection: 'Bunny Punks',
-    description: 'A rebellious bunny with attitude. This bunny punk is ready to hop into the metaverse with style.',
-    image: '/images/nft4.jpg',
-    price: '0.85',
-    likes: 56,
-    owner: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
-    creator: '0x02C6b7c2281F82471590351a1b18eFF627e9b2Ae',
-    attributes: [
-      { trait_type: 'Background', value: 'Urban Graffiti' },
-      { trait_type: 'Fur', value: 'Neon Green' },
-      { trait_type: 'Outfit', value: 'Leather Jacket' },
-      { trait_type: 'Accessories', value: 'Spiked Collar' },
-      { trait_type: 'Attitude', value: 'Rebellious' },
     ]
   },
   {
@@ -79,6 +64,7 @@ export const nfts = [
     likes: 67,
     owner: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
     creator: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
+    isListed: true,
     attributes: [
       { trait_type: 'Age', value: 'Ancient' },
       { trait_type: 'Material', value: 'Digital Gold' },
@@ -96,6 +82,7 @@ export const nfts = [
     likes: 31,
     owner: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
     creator: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
+    isListed: true,
     attributes: [
       { trait_type: 'Resolution', value: '32x32x32' },
       { trait_type: 'Animation', value: 'Hop Cycle' },
@@ -113,29 +100,12 @@ export const nfts = [
     likes: 45,
     owner: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
     creator: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
+    isListed: true,
     attributes: [
       { trait_type: 'Element', value: 'Spirit' },
       { trait_type: 'Season', value: 'Spring' },
       { trait_type: 'Aura', value: 'Shimmering Gold' },
       { trait_type: 'Special Ability', value: 'Luck Amplifier' },
-    ]
-  },
-  {
-    id: '8',
-    name: 'BadB#8',
-    collection: 'Cyber Creatures',
-    description: 'A futuristic cybernetic bunny with enhanced capabilities. Part of the Cyber Creatures series.',
-    image: '/images/nft8.jpg',
-    price: '1.75',
-    likes: 62,
-    owner: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
-    creator: '0xadccd6194BA9F656795fB345D6D21b78ae5CA097',
-    attributes: [
-      { trait_type: 'Generation', value: 'Mark IV' },
-      { trait_type: 'Power Source', value: 'Fusion Core' },
-      { trait_type: 'Enhancements', value: 'Night Vision' },
-      { trait_type: 'Armor', value: 'Titanium Alloy' },
-      { trait_type: 'AI Level', value: 'Sentient' },
     ]
   }
 ];

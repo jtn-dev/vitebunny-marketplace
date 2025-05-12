@@ -9,6 +9,7 @@ import { FaArrowLeft, FaEthereum } from 'react-icons/fa';
 import Button from '../components/Button';
 import { nfts } from '../utils/dummyData';
 import ListNFTButton from '../components/ListNFTButton';
+import { getNFTImagePath } from '../utils/imageUtils';
 
 export default function MyNFTs() {
   const { address, isConnected } = useAccount();
@@ -92,10 +93,10 @@ export default function MyNFTs() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {myNFTs.map(nft => (
             <div key={nft.id} className="bg-card-bg rounded-xl overflow-hidden border border-border hover:border-primary transition-colors">
-              <Link href={`/nft/${nft.id}`} className="block">
+              <Link href={`/nft/${nft.tokenId || nft.id}`} className="block">
                 <div className="aspect-square relative overflow-hidden">
                   <Image 
-                    src={nft.image} 
+                    src={getNFTImagePath(nft)}
                     alt={nft.name} 
                     width={400}
                     height={400}
@@ -104,7 +105,7 @@ export default function MyNFTs() {
                   />
                 </div>
                 <div className="p-4">
-                  <p className="text-foreground/60 text-sm">{nft.collection}</p>
+                  <p className="text-foreground/60 text-sm">{nft.collectionName || nft.collection}</p>
                   <h3 className="font-medium text-lg mt-1">{nft.name}</h3>
                   
                   <div className="flex items-center mt-3">
@@ -144,14 +145,14 @@ export default function MyNFTs() {
             <div className="flex items-center mb-6">
               <div className="w-24 h-24 rounded-lg overflow-hidden mr-4 relative">
                 <Image 
-                  src={selectedNFT.image} 
+                  src={getNFTImagePath(selectedNFT)}
                   alt={selectedNFT.name} 
                   fill
                   className="object-cover"
                 />
               </div>
               <div>
-                <p className="text-foreground/60 text-sm">{selectedNFT.collection}</p>
+                <p className="text-foreground/60 text-sm">{selectedNFT.collectionName || selectedNFT.collection}</p>
                 <h3 className="font-medium">{selectedNFT.name}</h3>
               </div>
             </div>

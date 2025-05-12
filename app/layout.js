@@ -29,12 +29,13 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <WalletProvider>
-          <Navbar />
-          {children}
-          <FeedbackBar />
-          <Footer />
-          <DatabaseProvider />
-          <Toaster position="bottom-right" />
+          <DatabaseProvider>
+            <Navbar />
+            {children}
+            <FeedbackBar />
+            <Footer />
+            <Toaster position="bottom-right" />
+          </DatabaseProvider>
         </WalletProvider>
       </body>
     </html>

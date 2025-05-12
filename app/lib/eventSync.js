@@ -106,7 +106,7 @@ export async function handleMarketItemCreated(itemId, nftContract, tokenId, sell
     if (nft) {
       const priceEth = ethers.formatEther(price);
       await Collection.findOneAndUpdate(
-        { name: nft.collection, floorPrice: { $gt: priceEth } },
+        { name: nft.collectionName, floorPrice: { $gt: priceEth } },
         { floorPrice: priceEth, updatedAt: new Date() }
       );
     }
@@ -141,10 +141,10 @@ export async function handleMarketItemSold(itemId, nftContract, tokenId, seller,
     if (nft) {
       const priceEth = ethers.formatEther(price);
       await Collection.findOneAndUpdate(
-        { name: nft.collection },
+        { name: nft.collectionName },
         { 
-          $inc: { volume: priceEth },
-          $set: { updatedAt: new Date() }
+          $inc: { volume: parseFloat(priceEth) || 0 },
+          updatedAt: new Date() 
         }
       );
     }

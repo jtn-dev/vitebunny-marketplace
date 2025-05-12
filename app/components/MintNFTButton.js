@@ -7,11 +7,13 @@ import {
   NFT_CONTRACT_ADDRESS, 
   signAndSendTransaction 
 } from '../utils/walletUtils';
+import useDatabaseSync from '../hooks/useDatabaseSync';
 
 const MintNFTButton = ({ name, description, image, collection, onSuccess, onError }) => {
   const { isConnected, address } = useAccount();
   const [isPending, setIsPending] = useState(false);
   const [txHash, setTxHash] = useState('');
+  const { syncMintedNFT, isLoading: isSyncing } = useDatabaseSync();
 
   // Set up contract write hook
   const { writeContractAsync } = useWriteContract();
@@ -20,7 +22,48 @@ const MintNFTButton = ({ name, description, image, collection, onSuccess, onErro
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
     enabled: Boolean(txHash),
+    onSuccess: async (data) => {
+      try {
+        // Get token ID from transaction receipt logs
+        const tokenId = extractTokenIdFromLogs(data.logs);
+        if (tokenId) {
+          // Sync the NFT to MongoDB
+          const syncedNft = await syncMintedNFT(tokenId, txHash);
+          if (syncedNft) {
+            onSuccess?.({ 
+              txHash: txHash,
+              tokenId: tokenId,
+              name,
+              collection,
+              nft: syncedNft
+            });
+          }
+        } else {
+          onSuccess?.({ txHash: txHash, name, collection });
+        }
+      } catch (error) {
+        console.error('Error syncing minted NFT to database:', error);
+        // Still consider the transaction successful even if DB sync failed
+        onSuccess?.({ txHash: txHash, name, collection });
+      }
+    }
   });
+
+  // Function to extract token ID from transaction logs
+  const extractTokenIdFromLogs = (logs) => {
+    try {
+      // This is a simplified example - you'd need to decode the logs
+      // based on your contract's event structure
+      if (logs && logs.length > 0) {
+        // Assuming the first log contains the NFTMinted event with tokenId as the first indexed parameter
+        return logs[0].topics?.[1] ? parseInt(logs[0].topics[1], 16).toString() : null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error extracting token ID from logs:', error);
+      return null;
+    }
+  };
 
   const generateMetadataURI = () => {
     // In a real application, you would upload this to IPFS
@@ -65,11 +108,7 @@ const MintNFTButton = ({ name, description, image, collection, onSuccess, onErro
 
       if (result.success) {
         setTxHash(result.hash);
-        onSuccess?.({ 
-          txHash: result.hash,
-          name,
-          collection
-        });
+        // onSuccess callback will be called by useWaitForTransactionReceipt hook
       } else {
         throw new Error(result.error || 'Failed to mint NFT');
       }
@@ -85,8 +124,8 @@ const MintNFTButton = ({ name, description, image, collection, onSuccess, onErro
   let buttonText = 'Mint NFT';
   let buttonClass = 'bg-primary hover:bg-primary/90 text-white font-medium';
   
-  if (isPending || isConfirming) {
-    buttonText = isPending ? 'Minting...' : 'Confirming...';
+  if (isPending || isConfirming || isSyncing) {
+    buttonText = isPending ? 'Minting...' : isConfirming ? 'Confirming...' : 'Syncing...';
     buttonClass = 'bg-gray-500 text-white cursor-not-allowed';
   } else if (isConfirmed) {
     buttonText = 'Minted Successfully!';
@@ -97,7 +136,7 @@ const MintNFTButton = ({ name, description, image, collection, onSuccess, onErro
     <button
       className={`w-full py-3 px-6 text-center font-medium text-sm uppercase tracking-wider transition-colors ${buttonClass}`}
       onClick={handleMintClick}
-      disabled={isPending || isConfirming || isConfirmed}
+      disabled={isPending || isConfirming || isConfirmed || isSyncing}
     >
       <span className="text-white">{buttonText}</span>
     </button>
