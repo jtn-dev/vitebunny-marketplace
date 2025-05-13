@@ -160,6 +160,7 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
 
   // Function to create market listing after approval
   const createMarketListing = async () => {
+    console.log('=== CREATE MARKET LISTING STARTED ===');
     try {
       setIsPending(true);
 
@@ -177,6 +178,7 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
       });
 
       const listingResult = await signAndSendTransaction(async () => {
+        console.log('Calling writeContractAsync for createMarketItem');
         return await writeContractAsync({
           address: MARKETPLACE_ADDRESS,
           abi: MARKETPLACE_ABI,
@@ -186,6 +188,8 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
         });
       });
 
+      console.log('Listing transaction result:', listingResult);
+      
       if (listingResult.success) {
         setTxHash(listingResult.hash);
         // onSuccess will be called by useWaitForTransactionReceipt hook
@@ -193,7 +197,7 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
         throw new Error(listingResult.error || 'Failed to list NFT');
       }
     } catch (error) {
-      console.error('Error listing NFT:', error);
+      console.error('=== LISTING ERROR ===', error);
       
       // Show more meaningful error message to user
       let errorMessage = 'Failed to list NFT';
@@ -220,31 +224,82 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
   };
 
   const handleApproveNFT = async () => {
+    console.log('=== APPROVE NFT STARTED ===');
     try {
       setIsApproving(true);
       setApprovalTimeout(false);
       
-      const approvalResult = await signAndSendTransaction(async () => {
-        return await writeContractAsync({
-          address: NFT_CONTRACT_ADDRESS,
-          abi: NFT_ABI,
-          functionName: 'approve',
-          args: [MARKETPLACE_ADDRESS, tokenId],
-          gas: BigInt(300000), // Increase gas limit for approval
-        });
+      // Get the contract addresses, use window fallbacks if necessary
+      const nftContractAddress = NFT_CONTRACT_ADDRESS || 
+                               (typeof window !== 'undefined' ? window.NFT_CONTRACT_ADDRESS : null) || 
+                               '0x1dac5D6276B2912BBb33a04E981B67080e90c428';
+                               
+      const marketplaceAddress = MARKETPLACE_ADDRESS || 
+                               (typeof window !== 'undefined' ? window.MARKETPLACE_ADDRESS : null) || 
+                               '0x45A7B09126cb5Ff067960E3bB924D78800c219A0';
+      
+      console.log('Approval request details:', {
+        NFT_CONTRACT_ADDRESS: nftContractAddress,
+        MARKETPLACE_ADDRESS: marketplaceAddress,
+        tokenId,
+        gas: '300000'
       });
 
-      if (!approvalResult.success) {
-        setIsApproving(false);
-        throw new Error(approvalResult.error || 'Failed to approve NFT transfer');
+      // First, let's validate we have all the required info
+      if (!tokenId) {
+        throw new Error('Missing token ID for approval');
       }
+      
+      if (!nftContractAddress) {
+        throw new Error('Missing NFT contract address');
+      }
+      
+      if (!marketplaceAddress) {
+        throw new Error('Missing marketplace address');
+      }
+      
+      // Try with a direct contract call without the signAndSendTransaction wrapper first
+      console.log('Calling writeContractAsync directly for approval');
+      try {
+        const tx = await writeContractAsync({
+          address: nftContractAddress,
+          abi: NFT_ABI,
+          functionName: 'approve',
+          args: [marketplaceAddress, tokenId],
+          gas: BigInt(300000), // Increase gas limit for approval
+        });
+        
+        console.log('Direct approval transaction response:', tx);
+        setApprovalTxHash(tx.hash);
+        return true;
+      } catch (directError) {
+        console.error('Direct approval failed, trying with signAndSendTransaction wrapper:', directError);
+        
+        // Fall back to the signAndSendTransaction wrapper
+        const approvalResult = await signAndSendTransaction(async () => {
+          return await writeContractAsync({
+            address: nftContractAddress,
+            abi: NFT_ABI,
+            functionName: 'approve',
+            args: [marketplaceAddress, tokenId],
+            gas: BigInt(300000), // Increase gas limit for approval
+          });
+        });
 
-      // Set the approval hash so we can track it
-      setApprovalTxHash(approvalResult.hash);
-      console.log('Approval transaction sent:', approvalResult.hash);
+        console.log('Approval transaction result:', approvalResult);
+        
+        if (!approvalResult.success) {
+          setIsApproving(false);
+          throw new Error(approvalResult.error || 'Failed to approve NFT transfer');
+        }
+
+        // Set the approval hash so we can track it
+        setApprovalTxHash(approvalResult.hash);
+        console.log('Approval transaction sent:', approvalResult.hash);
+      }
       
     } catch (error) {
-      console.error('Error approving NFT transfer:', error);
+      console.error('=== APPROVAL ERROR ===', error);
       setIsApproving(false);
       
       // Show more meaningful error message to user
@@ -267,34 +322,54 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
   };
 
   const handleListClick = async () => {
+    console.log('=== LIST BUTTON CLICKED ===');
+    console.log('Button state:', {
+      isConnected,
+      showPriceInput,
+      price,
+      tokenId,
+      skipApproval,
+      NFT_CONTRACT_ADDRESS,
+      MARKETPLACE_ADDRESS
+    });
+    
     if (!isConnected) {
+      console.log('Not connected to wallet');
       alert('Please connect your wallet first');
       return;
     }
 
     if (!showPriceInput) {
+      console.log('Showing price input');
       setShowPriceInput(true);
       return;
     }
 
     if (!price || parseFloat(price) <= 0) {
+      console.log('Invalid price:', price);
       alert('Please enter a valid price');
       return;
     }
 
     // Validate NFT token ID
     if (!tokenId) {
+      console.log('Invalid tokenId:', tokenId);
       onError?.('Invalid NFT: missing token ID');
       return;
     }
 
+    console.log('Proceeding with NFT listing process');
+    console.log('Skip approval:', skipApproval);
+    
     // If we can skip approval, go straight to listing
     if (skipApproval) {
+      console.log('Skipping approval, going straight to listing');
       await createMarketListing();
       return;
     }
 
     // Otherwise, handle the approval flow
+    console.log('Starting approval process');
     await handleApproveNFT();
   };
 

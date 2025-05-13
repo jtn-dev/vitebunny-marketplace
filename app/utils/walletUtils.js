@@ -236,14 +236,38 @@ export const MARKETPLACE_ABI = [
 // For local development, you can use a .env file with:
 // NFT_CONTRACT_ADDRESS=your_deployed_address
 // MARKETPLACE_ADDRESS=your_deployed_address
-export const NFT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS;
-export const MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS;
+
+// Use environment variables, window properties, or fallback to the known deployed addresses
+const FALLBACK_NFT_ADDRESS = '0x1dac5D6276B2912BBb33a04E981B67080e90c428';
+const FALLBACK_MARKETPLACE_ADDRESS = '0x45A7B09126cb5Ff067960E3bB924D78800c219A0';
+
+export const NFT_CONTRACT_ADDRESS = 
+  (typeof window !== 'undefined' && window.NFT_CONTRACT_ADDRESS) || 
+  process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS ||
+  FALLBACK_NFT_ADDRESS;
+
+export const MARKETPLACE_ADDRESS = 
+  (typeof window !== 'undefined' && window.MARKETPLACE_ADDRESS) || 
+  process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS ||
+  FALLBACK_MARKETPLACE_ADDRESS;
 
 // Add checks to ensure environment variables are loaded
-if (!NFT_CONTRACT_ADDRESS || !MARKETPLACE_ADDRESS) {
-  console.error("ERROR: Contract addresses are missing. Make sure NEXT_PUBLIC_NFT_CONTRACT_ADDRESS and NEXT_PUBLIC_MARKETPLACE_ADDRESS are set in your .env.local file.");
-  // Optionally, throw an error to prevent the app from running with missing addresses
-  // throw new Error("Missing contract addresses in environment variables.");
+if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS === 'undefined' || NFT_CONTRACT_ADDRESS === 'null') {
+  console.warn("WARNING: Using fallback NFT contract address:", FALLBACK_NFT_ADDRESS);
+  
+  // Set window property for client-side usage
+  if (typeof window !== 'undefined') {
+    window.NFT_CONTRACT_ADDRESS = FALLBACK_NFT_ADDRESS;
+  }
+}
+
+if (!MARKETPLACE_ADDRESS || MARKETPLACE_ADDRESS === 'undefined' || MARKETPLACE_ADDRESS === 'null') {
+  console.warn("WARNING: Using fallback marketplace address:", FALLBACK_MARKETPLACE_ADDRESS);
+  
+  // Set window property for client-side usage
+  if (typeof window !== 'undefined') {
+    window.MARKETPLACE_ADDRESS = FALLBACK_MARKETPLACE_ADDRESS;
+  }
 }
 
 /**
@@ -295,27 +319,87 @@ export const createNFTPurchaseData = (itemId) => {
  * Sign and send a transaction with improved error handling
  */
 export const signAndSendTransaction = async (writeAsync) => {
+  console.log('=== SIGN AND SEND TRANSACTION STARTED ===');
+  
+  // Validate contract addresses
+  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS === 'undefined' || NFT_CONTRACT_ADDRESS === 'null') {
+    console.error('CRITICAL ERROR: NFT_CONTRACT_ADDRESS is not defined correctly.');
+    console.error('Current value:', NFT_CONTRACT_ADDRESS);
+    console.error('This is likely an environment variable issue. Check your .env.local file and Vercel configuration.');
+    
+    // Use the known Sepolia testnet addresses as fallbacks
+    const FALLBACK_NFT_ADDRESS = '0x765e569925f7BDd16bdD08E0b314FB47b15C341f';
+    console.warn(`Using fallback NFT address: ${FALLBACK_NFT_ADDRESS}`);
+    
+    // This is for debugging only - in production, you should fix the environment variables
+    window.NFT_CONTRACT_ADDRESS = FALLBACK_NFT_ADDRESS;
+  }
+  
+  if (!MARKETPLACE_ADDRESS || MARKETPLACE_ADDRESS === 'undefined' || MARKETPLACE_ADDRESS === 'null') {
+    console.error('CRITICAL ERROR: MARKETPLACE_ADDRESS is not defined correctly.');
+    console.error('Current value:', MARKETPLACE_ADDRESS);
+    console.error('This is likely an environment variable issue. Check your .env.local file and Vercel configuration.');
+    
+    // Use the known Sepolia testnet addresses as fallbacks
+    const FALLBACK_MARKETPLACE_ADDRESS = '0xaEf132Adc67848Cbf74B79D4D33D09cD5dCB3a93';
+    console.warn(`Using fallback marketplace address: ${FALLBACK_MARKETPLACE_ADDRESS}`);
+    
+    // This is for debugging only - in production, you should fix the environment variables
+    window.MARKETPLACE_ADDRESS = FALLBACK_MARKETPLACE_ADDRESS;
+  }
+  
   try {
     console.log('Preparing to send transaction...');
-    const tx = await writeAsync();
-    console.log('Transaction sent:', tx);
+    
+    console.log('Contract addresses:', {
+      NFT_CONTRACT_ADDRESS: NFT_CONTRACT_ADDRESS || window.NFT_CONTRACT_ADDRESS,
+      MARKETPLACE_ADDRESS: MARKETPLACE_ADDRESS || window.MARKETPLACE_ADDRESS
+    });
+    
+    // Call the write function with a timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Transaction request timed out after 30 seconds')), 30000);
+    });
+    
+    const tx = await Promise.race([
+      writeAsync(),
+      timeoutPromise
+    ]);
+    
+    console.log('Transaction sent successfully:', tx);
     return {
       success: true,
       hash: tx.hash,
       data: tx
     };
   } catch (error) {
-    console.error('Transaction error:', error);
+    console.error('=== TRANSACTION ERROR ===');
+    console.error('Original error:', error);
     
     // Extract more meaningful error from different error formats
     let errorMessage = 'Transaction failed';
     
     if (error.message) {
       errorMessage = error.message;
+      console.error('Error message:', error.message);
     }
     
+    if (error.cause) {
+      console.error('Error cause:', error.cause);
+    }
+    
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
+    
+    // Check for connection issues
+    if (errorMessage.includes('timed out') || errorMessage.includes('timeout') || 
+        errorMessage.includes('network') || errorMessage.includes('connection')) {
+      console.error('Network connectivity issue detected. Please check your internet connection and wallet connection.');
+      errorMessage = 'Network connection issue. Please try again or refresh the page.';
+    }
     // Handle common error cases
-    if (errorMessage.includes('insufficient funds')) {
+    else if (errorMessage.includes('insufficient funds')) {
       errorMessage = 'Insufficient ETH balance to complete this transaction';
     } else if (errorMessage.includes('user rejected')) {
       errorMessage = 'Transaction was rejected in wallet';
@@ -338,6 +422,8 @@ export const signAndSendTransaction = async (writeAsync) => {
     } else if (errorMessage.includes('cannot estimate gas')) {
       errorMessage = 'Cannot estimate gas for this transaction. It may be invalid or require a different approach.';
     }
+    
+    console.error('Formatted error message:', errorMessage);
     
     return {
       success: false,
