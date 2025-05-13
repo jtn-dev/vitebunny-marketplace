@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { 
   NFT_ABI, 
@@ -24,9 +24,43 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
   const [showPriceInput, setShowPriceInput] = useState(false);
   const { syncListedNFT, isLoading: isSyncing } = useDatabaseSync();
   const [approvalTimeout, setApprovalTimeout] = useState(false);
+  const [skipApproval, setSkipApproval] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Set up contract write hook
   const { writeContractAsync } = useWriteContract();
+
+  // Check if NFT is already approved
+  const tokenId = nft.tokenId || nft.id;
+  const { data: approvedAddress } = useReadContract({
+    address: NFT_CONTRACT_ADDRESS,
+    abi: NFT_ABI,
+    functionName: 'getApproved',
+    args: [tokenId],
+    enabled: Boolean(tokenId),
+  });
+
+  // Reset states when NFT changes
+  useEffect(() => {
+    setApprovalTxHash('');
+    setTxHash('');
+    setApprovalTimeout(false);
+    setIsApproving(false);
+    setIsPending(false);
+    setSkipApproval(false);
+    setRetryCount(0);
+  }, [nft.tokenId, nft.id]);
+
+  // Check if we can skip approval
+  useEffect(() => {
+    if (approvedAddress && MARKETPLACE_ADDRESS && 
+        approvedAddress.toLowerCase() === MARKETPLACE_ADDRESS.toLowerCase()) {
+      setSkipApproval(true);
+      console.log("NFT already approved for marketplace, skipping approval step");
+    } else {
+      setSkipApproval(false);
+    }
+  }, [approvedAddress, MARKETPLACE_ADDRESS]);
 
   // Helper function to extract market item ID from logs
   const extractMarketItemIdFromLogs = (logs) => {
@@ -57,6 +91,8 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
     onSuccess: async (data) => {
       console.log('Approval transaction confirmed:', data);
       setIsApproving(false);
+      setApprovalTimeout(false);
+      setRetryCount(0);
       // Now proceed with listing the NFT
       await createMarketListing();
     },
@@ -100,13 +136,14 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
     }
   });
 
-  // Implement timeout for approval transaction
+  // Implement timeout for approval transaction - more aggressive now (15 seconds instead of 30)
   useEffect(() => {
     let timer;
     if (isApproving && !isApprovalConfirming && !isApprovalConfirmed) {
       timer = setTimeout(() => {
         setApprovalTimeout(true);
-      }, 30000); // 30 seconds timeout
+        setIsApproving(false);
+      }, 15000); // 15 seconds timeout
     }
     
     return () => {
@@ -129,7 +166,7 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
       // Create the market item
       const listingData = createNFTListingData(
         NFT_CONTRACT_ADDRESS,
-        nft.tokenId,
+        tokenId,
         price
       );
 
@@ -182,31 +219,8 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
     }
   };
 
-  const handleListClick = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
-
-    if (!showPriceInput) {
-      setShowPriceInput(true);
-      return;
-    }
-
-    if (!price || parseFloat(price) <= 0) {
-      alert('Please enter a valid price');
-      return;
-    }
-
-    // Validate NFT token ID
-    const tokenId = nft.tokenId || nft.id;
-    if (!tokenId) {
-      onError?.('Invalid NFT: missing token ID');
-      return;
-    }
-
+  const handleApproveNFT = async () => {
     try {
-      // First, approve the marketplace to transfer the NFT
       setIsApproving(true);
       setApprovalTimeout(false);
       
@@ -216,7 +230,7 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
           abi: NFT_ABI,
           functionName: 'approve',
           args: [MARKETPLACE_ADDRESS, tokenId],
-          gas: BigInt(250000), // Add gas limit for approval
+          gas: BigInt(300000), // Increase gas limit for approval
         });
       });
 
@@ -229,8 +243,6 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
       setApprovalTxHash(approvalResult.hash);
       console.log('Approval transaction sent:', approvalResult.hash);
       
-      // Note: We don't call createMarketListing here anymore
-      // It will be called by the approval transaction receipt hook
     } catch (error) {
       console.error('Error approving NFT transfer:', error);
       setIsApproving(false);
@@ -248,14 +260,59 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
       }
       
       onError?.(errorMessage);
+      return false;
     }
+    
+    return true;
+  };
+
+  const handleListClick = async () => {
+    if (!isConnected) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    if (!showPriceInput) {
+      setShowPriceInput(true);
+      return;
+    }
+
+    if (!price || parseFloat(price) <= 0) {
+      alert('Please enter a valid price');
+      return;
+    }
+
+    // Validate NFT token ID
+    if (!tokenId) {
+      onError?.('Invalid NFT: missing token ID');
+      return;
+    }
+
+    // If we can skip approval, go straight to listing
+    if (skipApproval) {
+      await createMarketListing();
+      return;
+    }
+
+    // Otherwise, handle the approval flow
+    await handleApproveNFT();
   };
 
   // Reset function for when approval times out
-  const handleApprovalReset = () => {
+  const handleApprovalReset = async () => {
     setIsApproving(false);
     setApprovalTimeout(false);
     setApprovalTxHash('');
+    setRetryCount(prev => prev + 1);
+    
+    // If we've tried approving multiple times, try to list directly
+    if (retryCount >= 2) {
+      // Try to list directly, assuming approval might have happened but transaction tracking failed
+      await createMarketListing();
+    } else {
+      // Try approval again
+      await handleApproveNFT();
+    }
   };
 
   // Button states based on transaction status
@@ -263,7 +320,7 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
   let buttonClass = 'bg-primary hover:bg-primary/90 text-white font-medium';
   
   if (showPriceInput && !isPending && !isConfirming && !isConfirmed && !isSyncing && !isApproving) {
-    buttonText = 'Create Listing';
+    buttonText = skipApproval ? 'Create Listing' : 'Approve & List';
   } else if (approvalTimeout) {
     buttonText = 'Approval Timed Out - Retry';
     buttonClass = 'bg-red-500 text-white';
@@ -321,6 +378,12 @@ const ListNFTButton = ({ nft, onSuccess, onError }) => {
         >
           <span className="text-white">{buttonText}</span>
         </button>
+      )}
+      
+      {retryCount > 0 && !approvalTimeout && !isApproving && !isPending && !isConfirming && (
+        <div className="mt-2 text-xs text-red-500">
+          Previous approval attempt failed. {retryCount >= 2 ? "Try refreshing the page if problems persist." : ""}
+        </div>
       )}
     </div>
   );

@@ -12,9 +12,18 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
   const [txHash, setTxHash] = useState('');
   const { syncPurchasedNFT, isLoading: isSyncing } = useDatabaseSync();
   const [transactionTimeout, setTransactionTimeout] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Set up contract write hook
   const { writeContractAsync } = useWriteContract();
+
+  // Reset states when NFT changes
+  useEffect(() => {
+    setTxHash('');
+    setTransactionTimeout(false);
+    setIsPending(false);
+    setRetryCount(0);
+  }, [nft.tokenId, nft.id, nft.marketItemId]);
 
   // Transaction receipt tracking
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -37,14 +46,14 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
     }
   });
 
-  // Implement timeout for transaction
+  // Implement timeout for transaction - more aggressive (15 seconds)
   useEffect(() => {
     let timer;
     if (isPending && !isConfirming && !isConfirmed) {
       timer = setTimeout(() => {
         setTransactionTimeout(true);
         setIsPending(false);
-      }, 30000); // 30 seconds timeout
+      }, 15000); // 15 seconds timeout
     }
     
     return () => {
@@ -59,12 +68,7 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
     }
   }, [isConfirming, isConfirmed]);
 
-  const handleBuyClick = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
-
+  const executePurchase = async () => {
     try {
       setIsPending(true);
       setTransactionTimeout(false);
@@ -92,7 +96,7 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
       // Prepare the purchase data
       const purchaseData = createNFTPurchaseData(itemId);
 
-      // Prepare the transaction
+      // Prepare the transaction with increased gas limit
       const result = await signAndSendTransaction(async () => {
         const txRequest = {
           address: MARKETPLACE_ADDRESS,
@@ -101,7 +105,7 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
           args: [purchaseData.itemId],
           value: priceValue,
           // Add gas configuration
-          gas: BigInt(300000), // Increase gas limit
+          gas: BigInt(400000), // Further increase gas limit
         };
         console.log('Transaction request:', txRequest);
         return await writeContractAsync(txRequest);
@@ -110,6 +114,7 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
       if (result.success) {
         setTxHash(result.hash);
         // onSuccess will be called by the useWaitForTransactionReceipt hook
+        return true;
       } else {
         console.error('Transaction failed with error:', result.error);
         throw new Error(result.error);
@@ -139,14 +144,28 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
       }
       
       onError?.(errorMessage);
+      return false;
     }
   };
 
+  const handleBuyClick = async () => {
+    if (!isConnected) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    await executePurchase();
+  };
+
   // Reset function for when transaction times out
-  const handleTransactionReset = () => {
+  const handleTransactionReset = async () => {
     setTransactionTimeout(false);
     setIsPending(false);
     setTxHash('');
+    setRetryCount(prev => prev + 1);
+    
+    // Try the purchase again
+    await executePurchase();
   };
 
   // Button states based on transaction status
@@ -187,6 +206,12 @@ const BuyNFTButton = ({ nft, marketItemId, onSuccess, onError, className = '' })
         >
           {buttonText}
         </button>
+      )}
+      
+      {retryCount > 0 && !transactionTimeout && !isPending && !isConfirming && (
+        <div className="mt-2 text-xs text-red-500">
+          Previous attempt failed. {retryCount >= 2 ? "Try refreshing the page if problems persist." : ""}
+        </div>
       )}
     </>
   );
